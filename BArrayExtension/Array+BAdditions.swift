@@ -58,14 +58,23 @@ extension RangeReplaceableCollection where Self: MutableCollection {
     
     // MARK: Faster methods
     
-    // O(n)
+    /** Complexity: O(n)
+     Remove items in array that satisfy the condition: 'shouldBeRemoved'
+     */
     public mutating func removeAll(where shouldBeRemoved: (Element) throws -> Bool) rethrows {
+        // Move all items that should be removed to the end of the array
         let suffixStart = try _halfStablePartition(isSuffixElement: shouldBeRemoved)
+        
+        // Now remove items
         removeSubrange(suffixStart...)
     }
     
-    // O(n)
-    // sortedIndexes: sorted ascending
+    /** Complexity: O(n)
+     sortedIndexes: sorted ascending
+     Similar to the idea of "Half stable partition"
+     This function shift all chunks between indexes that need to be removed.
+     Then remove the last range
+     */
     public mutating func removeAt(sortedIndexes: [Int]) {
         guard sortedIndexes.count > 0 else { return }
         let n = sortedIndexes.count
@@ -73,6 +82,8 @@ extension RangeReplaceableCollection where Self: MutableCollection {
         var suffixStart = sortedIndexes[0]
         var index: Int = 0
         var nextIndex: Int = 0
+        
+        //Shift chunks between indexes that need to be removed
         for i in 0..<(n - 1) {
             index = sortedIndexes[i]
             nextIndex = sortedIndexes[i+1]
@@ -81,11 +92,15 @@ extension RangeReplaceableCollection where Self: MutableCollection {
                 suffixStart += 1
             }
         }
+        
+        //Shift the last chunk
         index = nextIndex
         for j in (index + 1)..<self.count {
             self.moveElement(sourceIndex: j, targetIndex: suffixStart)
             suffixStart += 1
         }
+        
+        //Now all items which should be removed are at the end of the array -> remove range
         let startRemove = self.index(self.startIndex, offsetBy: suffixStart)
         self.removeSubrange(startRemove...)
     }
